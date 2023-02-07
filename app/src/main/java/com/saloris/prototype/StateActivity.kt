@@ -370,10 +370,11 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     private fun initFaceMesh() {
         // Initializes a new MediaPipe Face Mesh solution instance in the streaming mode.
         // refineLandmark - 눈, 입술 주변으로 분석 추가.
+        //얼굴 인식
         faceMesh = FaceMesh(
             this,
             FaceMeshOptions.builder()
-                .setStaticImageMode(false)
+                .setStaticImageMode(true)
                 .setRefineLandmarks(true)
                 .setRunOnGpu(true)
                 .build()
@@ -388,6 +389,7 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
     private var timerCheck = true
 
     @RequiresApi(Build.VERSION_CODES.O)
+    //얼굴 그물망
     private fun initGlSurfaceView() {
         // Initializes a new Gl surface view with a user-defined FaceMeshResultGlRenderer.
         glSurfaceView = SolutionGlSurfaceView(this, faceMesh.glContext, faceMesh.glMajorVersion)
@@ -519,7 +521,7 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             isFaceValid = isFaceOn && isFaceGood
             if (!isFaceValid) return
 
-            //(1) ear : EAR은 EAR(Eye Aspect Ratio) 알고리즘을 이용해 나타낸 비율이며 사용자가 현재 눈을 감고 있는지 파악하기 위해 사용되고
+            // EAR은 EAR(Eye Aspect Ratio) 알고리즘을 이용해 나타낸 비율이며 사용자가 현재 눈을 감고 있는지 파악하기 위해 사용되고
             // 기본적으로 EAR 계산은 다음과 같은 방법으로 진행.
 
             val leftEAR = ((distance(lEye[1].x, lEye[5].x, lEye[1].y, lEye[5].y))
@@ -533,6 +535,8 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             ear = (leftEAR + rightEAR) / 2
             //눈 밑 두 점과 눈 위 두 점의 각각의 사이 거리를 더한 후 눈의 외안각과 내안각 사이 거리를 나누어주면 눈의 감김 비율이 나오게 되어
             // 이를 바탕으로 현재 눈의 상태를 판단한 후 눈의 landmark를 추출하게 되면 오른쪽 눈과 왼쪽 눈의 해당하는 점들의 정보를 받을 수 있음.
+
+            //MAR은 입이 닫혀진 비율로 눈과 같은 방법을 통해 입으로 계산한 비율
             mar = ((distance(mouth[1].x, mouth[7].x, mouth[1].y, mouth[7].y))
                     + (distance(mouth[2].x, mouth[6].x, mouth[2].y, mouth[6].y))
                     + (distance(mouth[3].x, mouth[5].x, mouth[3].y, mouth[5].y))) /
@@ -695,7 +699,7 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
                     longClosedState = false
                     stopWarning()
                 }
-                //(1) leftEye, rightEye : 왼쪽과 오른쪽 눈을 구분하여 각각의 동공이 어느 방향을 바라보는지 나타냄.
+                // leftEye, rightEye : 왼쪽과 오른쪽 눈을 구분하여 각각의 동공이 어느 방향을 바라보는지 나타냄.
                 if (leftEAR < 0.22) {
                     leftEye = getString(R.string.blink)
                     rightEye = eyeDirection(leftEyeDistance, rightEyeDistance)
@@ -709,11 +713,11 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             }
         }
     }
-
+    //거리 구하는 함수
     private fun distance(rx: Float, lx: Float, ry: Float, ly: Float): Float {
         return sqrt((rx - lx).pow(2) + (ry - ly).pow(2))
     }
-
+    // 왼쪽과 오른쪽 눈을 구분하여 각각의 동공이 어느 방향을 바라보는지 나타냄
     private fun eyeDirection(ld: Float, rd: Float): String {
         return if ((ld - rd) > 0.004)
             getString(R.string.left)
@@ -723,7 +727,8 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             getString(R.string.front)
 
     }
-
+    // 현재 얼굴이 어느 방향인지 정면, 아래, 왼쪽, 오른쪽 4가지 방향으로 구분하여 나타내며
+    // 정면과 아래 방향인 경우는 얼굴의 이마 점과 턱 점을 중심으로 렌즈와의 거리인 z방향 좌표를 이용해 두 거리의 차를 이용하여 방향을 구함.
     private fun faceDirection(
         lez: Float, rez: Float, lmz: Float, rmz: Float, hp: Float, cp: Float,
     ): String {
@@ -1090,7 +1095,7 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             prefs.getBoolean("lib", false),
             prefs.getBoolean("faceMesh", false),
             prefs.getBoolean("faceLine", false)
-        )
+        )//얼굴에 그물망을 그리는 변수, 여기서 하나라도 true로 바꾸면 오류가 발생한다.
         faceMeshColors = arrayListOf(
             colorLoad(prefs.getInt("eyeColor", 5)),
             colorLoad(prefs.getInt("eyeBrowColor", 4)),
@@ -1098,7 +1103,7 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             colorLoad(prefs.getInt("libColor", 3)),
             colorLoad(prefs.getInt("faceMeshColor", 1)),
             colorLoad(prefs.getInt("faceLineColor", 1))
-        )
+        )//그물망에 대한 색 변경
         prefs = baseContext.getSharedPreferences("alarm", Context.MODE_PRIVATE)
         alarmState = prefs.getBoolean("alarmState", false)
 
