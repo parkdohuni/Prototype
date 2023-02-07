@@ -35,7 +35,7 @@ const val FRAGMENT_SHADER = "precision mediump float;" +
         "void main() {" +
         "   gl_FragColor = uColor;" +
         "}"
-
+//졸음 분석을 위해 필요한 정보와 각각의 점들은 다음과 같음.
 val MOUTH_INDEX = listOf(78, 82, 13, 312, 30, 317, 14, 87, 61, 291) // 입 8 / 입술 2 (l, r)
 val LEFT_EYE_INDEX = listOf(33, 158, 159, 133, 145, 153, 468) // 눈 6 (0: l, 2: u, 4: d) / 홍채 1
 val RIGHT_EYE_INDEX = listOf(362, 385, 386, 263, 374, 380, 473) // 눈 6 (2: u, 3: r, 4: d) / 홍채 1

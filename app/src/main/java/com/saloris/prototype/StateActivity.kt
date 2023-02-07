@@ -519,14 +519,20 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             isFaceValid = isFaceOn && isFaceGood
             if (!isFaceValid) return
 
+            //(1) ear : EAR은 EAR(Eye Aspect Ratio) 알고리즘을 이용해 나타낸 비율이며 사용자가 현재 눈을 감고 있는지 파악하기 위해 사용되고
+            // 기본적으로 EAR 계산은 다음과 같은 방법으로 진행.
+
             val leftEAR = ((distance(lEye[1].x, lEye[5].x, lEye[1].y, lEye[5].y))
                     + (distance(lEye[2].x, lEye[4].x, lEye[2].y, lEye[4].y))) /
                     (2 * (distance(lEye[0].x, lEye[3].x, lEye[0].y, lEye[3].y)))
+
             val rightEAR = ((distance(rEye[1].x, rEye[5].x, rEye[1].y, rEye[5].y))
                     + (distance(rEye[2].x, rEye[4].x, rEye[2].y, rEye[4].y))) /
                     (2 * (distance(rEye[0].x, rEye[3].x, rEye[0].y, rEye[3].y)))
 
             ear = (leftEAR + rightEAR) / 2
+            //눈 밑 두 점과 눈 위 두 점의 각각의 사이 거리를 더한 후 눈의 외안각과 내안각 사이 거리를 나누어주면 눈의 감김 비율이 나오게 되어
+            // 이를 바탕으로 현재 눈의 상태를 판단한 후 눈의 landmark를 추출하게 되면 오른쪽 눈과 왼쪽 눈의 해당하는 점들의 정보를 받을 수 있음.
             mar = ((distance(mouth[1].x, mouth[7].x, mouth[1].y, mouth[7].y))
                     + (distance(mouth[2].x, mouth[6].x, mouth[2].y, mouth[6].y))
                     + (distance(mouth[3].x, mouth[5].x, mouth[3].y, mouth[5].y))) /
@@ -541,19 +547,22 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
             face = faceDirection(mouth[8].z, mouth[9].z, lEye[0].z, rEye[3].z, base[0].z, base[2].z)
 
             // 한 눈을 감았을 떄 EAR 평균 0.14
+            //ear의 값이 작을수록 눈을 감은 상태라고 판단
             if (ear < 0.09) {
                 if (!longClosedState) {
                     lifecycleScope.launch(Dispatchers.Main) {
                         Log.d("blink", "blink")
+                        binding.isBlink.text = "눈을 감음"
                         with(binding.blink) {
                             text = getString(R.string.blink)
                             setTextColor(ContextCompat.getColor(this@StateActivity, R.color.drowsy))
                             visibility = View.INVISIBLE
                         }
                     }
+
                 }
-                count++
-                blink = 0
+                count++//눈을 감았으니 카운트
+                blink = 0 //눈을 감으면 0
                 leftEye = getString(R.string.blink)
                 rightEye = getString(R.string.blink)
                 if (beforeCheck) {
@@ -564,54 +573,55 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
                     startTime = getTime()
                     startCheck = false
                 }
-                if (longClosedCount == 1 && (betweenTime(startTime) % 1) == 0L) {
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        with(binding.timerFitting) {
-                            text = (15 - betweenTime(startTime)).toString()
-                            setTextColor(ContextCompat.getColor(this@StateActivity, R.color.white))
-                            visibility = View.VISIBLE
-                        }
-                        with(binding.longClosedFitting) {
-                            text = longClosedCount.toString()
-                            setTextColor(ContextCompat.getColor(this@StateActivity, R.color.white))
-                            visibility = View.VISIBLE
-                        }
-                    }
-                    if (betweenTime(startTime) <= 0) {
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            with(binding.timerFitting) {
-                                text = 0.toString()
-                                setTextColor(ContextCompat.getColor(this@StateActivity,
-                                    R.color.white))
-                                visibility = View.VISIBLE
-                            }
-                            with(binding.longClosedFitting) {
-                                text = 0.toString()
-                                setTextColor(ContextCompat.getColor(this@StateActivity,
-                                    R.color.white))
-                                visibility = View.VISIBLE
-                            }
-                        }
-                    }
-                }
-                if (!longClosedState) {
-                    if ((betweenTime(beforeTime) % 1) == 0L && betweenTime(beforeTime) != 0L) {
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            with(binding.blink) {
-                                text = betweenTime(beforeTime).toString()
-                                setTextColor(ContextCompat.getColor(this@StateActivity,
-                                    R.color.drowsy))
-                                visibility = View.INVISIBLE
-                            }
+//                if (longClosedCount == 1 && (betweenTime(startTime) % 1) == 0L) {
+//                    lifecycleScope.launch(Dispatchers.Main) {
+//                        with(binding.timerFitting) {
+//                            text = (15 - betweenTime(startTime)).toString()
+//                            setTextColor(ContextCompat.getColor(this@StateActivity, R.color.white))
+//                            visibility = View.VISIBLE
+//                        }
+//                        with(binding.longClosedFitting) {
+//                            text = longClosedCount.toString()
+//                            setTextColor(ContextCompat.getColor(this@StateActivity, R.color.white))
+//                            visibility = View.VISIBLE
+//                        }
+//                    }
+//                    if (betweenTime(startTime) <= 0) {
+//                        lifecycleScope.launch(Dispatchers.Main) {
+//                            with(binding.timerFitting) {
+//                                text = 0.toString()
+//                                setTextColor(ContextCompat.getColor(this@StateActivity,
+//                                    R.color.white))
+//                                visibility = View.VISIBLE
+//                            }
+//                            with(binding.longClosedFitting) {
+//                                text = 0.toString()
+//                                setTextColor(ContextCompat.getColor(this@StateActivity,
+//                                    R.color.white))
+//                                visibility = View.VISIBLE
+//                            }
+//                        }
+//                    }
+//                }
+//                if (!longClosedState) {
+//                    if ((betweenTime(beforeTime) % 1) == 0L && betweenTime(beforeTime) != 0L) {
+//                        lifecycleScope.launch(Dispatchers.Main) {
+//                            with(binding.blink) {
+//                                text = betweenTime(beforeTime).toString()
+//                                setTextColor(ContextCompat.getColor(this@StateActivity,
+//                                    R.color.drowsy))
+//                                visibility = View.INVISIBLE
+//                            }
 //                            with(binding.longClosedFitting) {
 //                                text = longClosedCount!!.toString()
 //                                setTextColor(ContextCompat.getColor(this@MainActivity,
 //                                    R.color.white))
 //                                visibility = View.VISIBLE
 //                            }
-                        }
-                    }
-                }
+//                        }
+//                    }
+//                }
+                //눈을 3초 이상 감으면
                 if (betweenTime(beforeTime) >= 3) {
                     longClosedCount++
                     longClosedEye++
@@ -647,31 +657,32 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
                         startTime = getTime()
                     }
                 }
-            } else {
+            } else { //눈을 뜬 상태
                 if (count > 2 || ear > 0.09) {
                     lifecycleScope.launch(Dispatchers.Main) {
                         with(binding.blink) {
+                            binding.isBlink.text = "눈을 뜸"
                             text = getString(R.string.blink)
                             setTextColor(ContextCompat.getColor(this@StateActivity, R.color.drowsy))
                             visibility = View.GONE
                         }
                     }
-                    if (longClosedCount == 1 && (betweenTime(startTime) % 1) == 0L) {
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            with(binding.timerFitting) {
-                                text = (15 - betweenTime(startTime)).toString()
-                                setTextColor(ContextCompat.getColor(this@StateActivity,
-                                    R.color.white))
-                                visibility = View.VISIBLE
-                            }
-                            with(binding.longClosedFitting) {
-                                text = longClosedCount.toString()
-                                setTextColor(ContextCompat.getColor(this@StateActivity,
-                                    R.color.white))
-                                visibility = View.VISIBLE
-                            }
-                        }
-                    }
+//                    if (longClosedCount == 1 && (betweenTime(startTime) % 1) == 0L) {
+//                        lifecycleScope.launch(Dispatchers.Main) {
+//                            with(binding.timerFitting) {
+//                                text = (15 - betweenTime(startTime)).toString()
+//                                setTextColor(ContextCompat.getColor(this@StateActivity,
+//                                    R.color.white))
+//                                visibility = View.VISIBLE
+//                            }
+//                            with(binding.longClosedFitting) {
+//                                text = longClosedCount.toString()
+//                                setTextColor(ContextCompat.getColor(this@StateActivity,
+//                                    R.color.white))
+//                                visibility = View.VISIBLE
+//                            }
+//                        }
+//                    }
                     count = 0
                     blink = 1
                     totalBlink++
@@ -684,6 +695,7 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
                     longClosedState = false
                     stopWarning()
                 }
+                //(1) leftEye, rightEye : 왼쪽과 오른쪽 눈을 구분하여 각각의 동공이 어느 방향을 바라보는지 나타냄.
                 if (leftEAR < 0.22) {
                     leftEye = getString(R.string.blink)
                     rightEye = eyeDirection(leftEyeDistance, rightEyeDistance)
@@ -728,7 +740,7 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
                 getString(R.string.front)
         }
     }
-
+    // face mesh와 상관없는 코드
     /* Warn */
     private val toneGenerator1 = ToneGenerator(AudioManager.STREAM_MUSIC, 200)
     private val toneGenerator2 = ToneGenerator(AudioManager.STREAM_MUSIC, 500)
@@ -975,7 +987,6 @@ class StateActivity : AppCompatActivity(), CoroutineScope by MainScope() {
 //            permissionList = permissionList.plus(bluetoothPermissionList)
 //        }
 //        requestPermissionLauncher.launch(permissionList)
-
         // 심박수 정보 표시창 타이머
         toNewTimerTask()
 
